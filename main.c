@@ -4,6 +4,9 @@
 #include "stdint.h"
 
 
+#define MAX_MACRO(x, y) ((x) > (y) ? (x) : (y))
+#define MIN_MACRO(x, y) ((x) < (y) ? (x) : (y))
+
 #define DEFAULT_SIZE_W 512
 #define DEFAULT_SIZE_H 512
 
@@ -12,6 +15,7 @@ void print_info(void)
 {
 	printf("C_DIP [MAIN.C]\n");
 }
+
 
 
 uint32_t m_get_i(uint32_t lin_pos, uint32_t w, uint32_t h)
@@ -39,6 +43,12 @@ uint8_t max_func(uint8_t x, uint8_t y)
 		return x;
 	else
 		return y;
+}
+
+uint8_t abs_diff_func(uint8_t x, uint8_t y)
+
+{
+	return max_func(x, y) - min_func(x, y); 
 }
 
 
@@ -200,10 +210,6 @@ void mirror_y_func(uint8_t *input_buffer, uint8_t *output_buffer, uint32_t w, ui
 
 }
 
-uint8_t abs_diff_func(uint8_t x, uint8_t y)
-{
-	return max_func(x, y) - min_func(x, y); 
-}
 
 void darken_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
 {
@@ -213,6 +219,103 @@ void darken_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint
 	for( ; k < buffer_size; k++)
 		output_buffer[k] = min_func(input_buffer_1[k], input_buffer_2[k]);
 }
+
+void mul_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+	{
+		float a = (float)input_buffer_1[k]/255.0f;
+		float b = (float)input_buffer_2[k]/255.0f;
+		output_buffer[k] = (uint8_t)(255.0*(a*b));
+	}
+}
+
+void screen_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+	{
+		float a = (float)input_buffer_1[k]/255.0f;
+		float b = (float)input_buffer_2[k]/255.0f;
+		output_buffer[k] = (uint8_t)(255.0*(1.0 - (1.0 - a)*(1.0 - b)));
+	}
+
+}
+
+void lighten_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+		output_buffer[k] = max_func(input_buffer_1[k], input_buffer_2[k]);
+}
+
+void diff_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+		output_buffer[k] = abs_diff_func(input_buffer_1[k], input_buffer_2[k]);
+}
+
+void dodge_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+	{
+		float a = (float)input_buffer_1[k]/255.0f;
+		float b = (float)input_buffer_2[k]/255.0f;
+		if(input_buffer_2[k] == 255)
+			output_buffer[k] = 255;
+		else
+			output_buffer[k] = (uint8_t)(255.0*MIN_MACRO(1.0, a/(1.0 - b)));
+	}
+
+}
+
+void bum_blending_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+	{
+		float a = (float)input_buffer_1[k]/255.0f;
+		float b = (float)input_buffer_2[k]/255.0f;
+		if(input_buffer_2[k] == 0)
+			output_buffer[k] = 0;
+		else
+			output_buffer[k] = (uint8_t)(255.0*(1.0 - MIN_MACRO(1.0, (1.0 - a)/b)));
+	}
+
+}
+
+
+void compose_img_as_alpha_func(uint8_t *input_buffer_1, uint8_t *input_buffer_2, uint8_t *input_buffer_3, uint8_t *output_buffer, uint32_t w, uint32_t h)
+{
+	uint32_t buffer_size = w * h;
+	uint32_t k = 0;
+
+	for( ; k < buffer_size; k++)
+	{
+		float a = (float)input_buffer_1[k]/255.0f;
+		float b = (float)input_buffer_2[k]/255.0f;
+		float alpha = (float)input_buffer_3[k]/255.0f;
+		float r = (1.0 - alpha)*b + alpha*a;
+		output_buffer[k] = (uint8_t)(255.0*r);
+	}
+
+}
+
 
 int32_t main(void)
 {
@@ -224,11 +327,20 @@ int32_t main(void)
 	char *out_filename_4 = "out_bin\\baboon_out_4.bin";
 
 	char *filename_2 = "bin\\Peppers.bin";
+	char *filename_3 = "bin\\boat.bin";
 	char *out_2_f = "out_bin\\Peppers_t.bin";
 	char *out_darken_blend_f = "out_bin\\darken_tmp.bin";
+	char *out_mul_blend_f = "out_bin\\mul_tmp.bin";
+	char *out_screen_blend_f = "out_bin\\screen_tmp.bin";
+	char *out_lighten_blend_f = "out_bin\\lighten_tmp.bin";
+	char *out_diff_blend_f = "out_bin\\diff_tmp.bin";
+	char *out_dodge_blend_f = "out_bin\\dodge_tmp.bin";
+	char *out_bum_blend_f = "out_bin\\bum_tmp.bin";
+	char *out_comp_f = "out_bin\\compose_tmp.bin";
 
 	uint8_t image_array[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
 	uint8_t image_array_2[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
+	uint8_t image_array_3[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
 	uint8_t tmp_buffer[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
 	uint8_t tmp_buffer_2[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
 	uint8_t tmp_buffer_3[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
@@ -246,6 +358,7 @@ int32_t main(void)
 
 	load_image(filename, image_array);
 	load_image(filename_2, image_array_2);
+	load_image(filename_3, image_array_3);
 
 //	print_image_array(image_array, image_size);
 
@@ -269,6 +382,28 @@ int32_t main(void)
 
 	darken_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
 	save_image(out_darken_blend_f, tmp_buffer_3, buffer_size);
+
+	lighten_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
+	save_image(out_lighten_blend_f, tmp_buffer_3, buffer_size);
+
+	mul_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
+	save_image(out_mul_blend_f, tmp_buffer_3, buffer_size);
+	
+	screen_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
+	save_image(out_screen_blend_f, tmp_buffer_3, buffer_size);
+
+	diff_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
+	save_image(out_diff_blend_f, tmp_buffer_3, buffer_size);
+	
+	dodge_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
+	save_image(out_dodge_blend_f, tmp_buffer_3, buffer_size);
+
+	bum_blending_func(image_array, image_array_2, tmp_buffer_3, w_size, h_size);
+	save_image(out_bum_blend_f, tmp_buffer_3, buffer_size);
+
+
+	compose_img_as_alpha_func(image_array, image_array_2, image_array_3, tmp_buffer_3, w_size, h_size);
+	save_image(out_comp_f, tmp_buffer_3, buffer_size);
 
 	return 0;
 

@@ -1,0 +1,25 @@
+
+gcc main.c -o bin_main
+
+run png2bin.py --in=Bagira.png --out=Bagira.bin
+run png2bin.py --in=Peppers.png --out=Peppers.bin
+run png2bin.py --in=baboon.png --out=baboon.bin
+
+
+./bin_main
+
+run bin2png.py --in=Peppers_t.bin --out=Peppers_t.png
+run bin2png.py --in=darken_tmp.bin --out=darken_blending_tmp.png
+run bin2png.py --in=mul_tmp.bin --out=mul_blending_tmp.png
+run bin2png.py --in=screen_tmp.bin --out=screen_blending_tmp.png
+run bin2png.py --in=lighten_tmp.bin --out=lighten_blending_tmp.png
+run bin2png.py --in=diff_tmp.bin --out=diff_blending_tmp.png
+run bin2png.py --in=dodge_tmp.bin --out=dodge_blending_tmp.png
+run bin2png.py --in=bum_tmp.bin --out=bum_blending_tmp.png
+
+
+run png2bin.py --in=boat.png --out=boat.bin
+run bin2png.py --in=compose_tmp.bin --out=compose_img_as_alpha_tmp.png
+
+
+

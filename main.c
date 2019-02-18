@@ -3,6 +3,7 @@
 #include "stdlib.h"
 #include "stdint.h"
 
+#include "func.h"
 
 #define MAX_MACRO(x, y) ((x) > (y) ? (x) : (y))
 #define MIN_MACRO(x, y) ((x) < (y) ? (x) : (y))
@@ -325,6 +326,7 @@ int32_t main(void)
 	char *out_filename_2 = "out_bin\\baboon_out_t.bin";
 	char *out_filename_3 = "out_bin\\baboon_out_3.bin";
 	char *out_filename_4 = "out_bin\\baboon_out_4.bin";
+	char *hist_filename = "hist\\baboon_hist.txt";
 
 	char *filename_2 = "bin\\Peppers.bin";
 	char *filename_3 = "bin\\boat.bin";
@@ -344,8 +346,11 @@ int32_t main(void)
 	uint8_t tmp_buffer[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
 	uint8_t tmp_buffer_2[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
 	uint8_t tmp_buffer_3[DEFAULT_SIZE_W * DEFAULT_SIZE_H + 1024] = { 0 };
+	uint32_t hist_buffer[256] = { 0 };
+	float pdf_buffer[256] = { 0.0 };
 	uint32_t image_size = DEFAULT_SIZE_W * DEFAULT_SIZE_H;
 	uint32_t buffer_size = DEFAULT_SIZE_W * DEFAULT_SIZE_H;
+	uint32_t hist_size = 256;
 	uint32_t w_size = DEFAULT_SIZE_W;
 	uint32_t h_size = DEFAULT_SIZE_H;
 
@@ -404,6 +409,44 @@ int32_t main(void)
 
 	compose_img_as_alpha_func(image_array, image_array_2, image_array_3, tmp_buffer_3, w_size, h_size);
 	save_image(out_comp_f, tmp_buffer_3, buffer_size);
+
+
+//PART 2
+
+	calc_hist_func(image_array, hist_buffer, buffer_size);
+	write_hist_in_file(hist_filename, hist_buffer, hist_size);
+
+	calc_pdf_func(hist_buffer, pdf_buffer, hist_size, buffer_size);
+
+
+
+	uint32_t b_max;
+	float I;
+	float D;
+	float E;
+	float A;
+	float E_n;
+	float H_n;
+
+	b_max = 255;
+	
+	I = calc_mean_func(pdf_buffer, b_max);
+	printf("\n\n[MEAN] I = %f\n", I);
+
+	D = calc_var_func(pdf_buffer, b_max);
+	printf("[VAR] D = %f\n", D);
+
+	E = calc_kurtosis_func(pdf_buffer, b_max);
+	printf("[KURTOSIS] E = %f\n", E);
+
+	A = calc_skewness_func(pdf_buffer, b_max);
+	printf("[SKEWNESS] A = %f\n", A);
+
+	E_n = calc_uniformity_func(pdf_buffer, b_max);
+	printf("[UNIFORMITY] E_n = %f\n", E_n);
+
+	H_n = calc_entropy_func(pdf_buffer, b_max);
+	printf("[ENTROPY] H_n = %f\n", H_n);
 
 	return 0;
 
